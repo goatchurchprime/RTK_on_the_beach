@@ -66,7 +66,7 @@ class PositionBank(threading.Thread):
     def generaterandomposforever(self):
         rpm = 0
         rad = 15
-        sd = 1
+        sd = 0.3
         t0 = time.time()
         zfac = 0.1
         while True:
@@ -125,7 +125,7 @@ class DarknessMeasureFlash(threading.Thread):
         self.socketconnectedFlash = None
         self.sockerrfileFlash = None
         self.lastexception = None
-        self.tprevflash = 0
+        self.exceptioncount = 0
     
     def getunderpixelQ(self, wx, wy):
         if self.imgplot is None:
@@ -144,45 +144,61 @@ class DarknessMeasureFlash(threading.Thread):
     
     def sendflash(self, fp):
         if fp == -1:
-            freq, duty = 1, 800
-        elif fp < 0.5:
-            freq, duty = 1, 500*(fp*2)
+            timeradd, timerlight = 20, 80
         else:
-            freq, duty = int(1 + (fp-0.4999)*10), 500
-            
-        # quick hack to avoid PWMs being before they have done a proper flash
-        tflash = time.time()
-        tsecdiff = tflash - self.tprevflash
-        tsecdiff = tsecdiff - math.floor(tsecdiff)
-        time.sleep(tsecdiff*0.95)
-        
-        self.socketconnectedFlash.send(b"%d %d\n" % (freq, duty))
-    
+            timeradd = 30 + fp*(250-30)
+            timerlight = 60 + fp*(600-60)
+        self.socketconnectedFlash.send(b"%d %d\n" % (timeradd, timerlight))
 
     def run(self):
         while True:
             try:
                 self.socketconnectedFlash = socket.socket()
                 print("flash connecting")
+                self.socketconnectedFlash.settimeout(3)
                 self.socketconnectedFlash.connect(socket.getaddrinfo("192.168.43.1", self.port)[0][-1])
                 self.sockerrfileFlash = self.socketconnectedFlash.makefile('rwb', 0)
                 row = self.sockerrfileFlash.readline()
                 print("flash", row)
                 self.socketconnectedFlash.send(b"+AAA")
                 while True:
-                    wx, wy = self.queuepoints.get()
+                    wx, wy = self.queuepoints.get()  # hangs waiting for position signals
                     fp = self.getunderpixelQ(wx, wy)
                     self.sendflash(fp)
                     
             except ConnectionRefusedError as e:
                 print(e, type(e))
                 self.lastexception = e
+                self.exceptioncount += 1
                 time.sleep(2)
+            except BrokenPipeError as e:
+                print(e, type(e))
+                self.lastexception = e
+                self.exceptioncount += 1
+                time.sleep(0.5)
+            except TimeoutError as e:
+                print(e, type(e))
+                self.lastexception = e
+                self.exceptioncount += 1
+                time.sleep(0.5)
+            except socket.timeout as e:
+                print(e, type(e))
+                self.lastexception = e
+                self.exceptioncount += 1
+                time.sleep(0.5)
+            except ConnectionResetError as e:
+                print(e, type(e))
+                self.lastexception = e
+                self.exceptioncount += 1
+                time.sleep(0.5)
             except ValueError as e:
                 print(e, type(e))
                 self.lastexception = e
+                self.exceptioncount += 1
+                
             except Exception as e:
                 self.lastexception = e
+                self.exceptioncount += 1
                 print(e, type(e))
                 break  # might be a syntax error
 
