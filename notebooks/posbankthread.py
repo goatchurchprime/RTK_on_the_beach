@@ -13,6 +13,14 @@ import math, time, datetime, random
 #   /home/julian/extrepositories/RTKLIB-rtkexplorer/app/rtkrcv/gcc/rtkrcv -s -o /home/julian/repositories/RTK_on_the_beach/conf/csingle.conf
 
 
+# For loading an individual file (not streaming) you can use hacktrack
+#import sys
+#sys.path.append("/home/julian/repositories/Future-Hangglider/hacktrack")
+#fd = loaders.FlyDat("file.log")
+#fd.LoadPOS("file.pos");
+#fd.LoadC("aQ");
+
+
 columnnames = "%  GPST                  latitude(deg) longitude(deg)  height(m)   Q  ns   sdn(m)   sde(m)   sdu(m)  sdne(m)  sdeu(m)  sdun(m) age(s)  ratio".split()
 
 class PositionBank(threading.Thread):
@@ -105,6 +113,9 @@ class PositionBank(threading.Thread):
                 self.lastexception = e
                 time.sleep(2)
             except ValueError as e:
+                print(e, type(e))
+                self.lastexception = e
+            except IndexError as e:
                 print(e, type(e))
                 self.lastexception = e
             except Exception as e:

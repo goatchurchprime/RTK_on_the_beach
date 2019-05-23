@@ -78,4 +78,29 @@ while 1:
     t = threading.Thread(target=waitallocate, args=(conn,), daemon=True)
     t.start()
     
+# --------------
+# Use the following to post bytes from one to another
+
+#import socket
+#host = "localhost"
+#host = "freesteel.co.uk"
+#port = 80
+#addr = socket.getaddrinfo(host, port)[0][-1]
+#print(addr)
+
+# --------------
+#s1 = socket.socket()
+#s1.connect(addr)
+#s1.send(b"+kkk")
+
+#s2 = socket.socket()
+#s2.connect(addr)
+#s2.send(b"-kkk")
+
+# --------------
+#s1.send(b"hi there")
+
+# --------------
+#s2.recv(6)
+
 
