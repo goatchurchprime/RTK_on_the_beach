@@ -1,14 +1,24 @@
-# Copy the .ubx files across from the phone(s) to a directory and process into .pos files
+# 
+# Use this code for post-processing the UBX files from base and two rovers
+# Where esp32s have Future-Hangglider/hangspotdetection/esp32code/HangUBXM8TWingtip.ipynb
+# and Android phone is running Hangspot3
+#
+
+# Copy the .ubx files across from the phone(s) to a directory 
+# and process into .pos files
 # against settings in the config files
+
 
 import argparse
 
 parser = argparse.ArgumentParser(description='Post-process ABC UBX files')
 parser.add_argument('-f','--force', help='Force recompute', action='store_true')
+parser.add_argument('-s','--single', help='Single file processing', action='store_true')
 parser.add_argument("fdir")
 args = parser.parse_args()
 fdir = args.fdir
 bforce = args.force
+bsingle = args.single
 
 #
 # Do the conversions from ubx to pos and nav
@@ -37,38 +47,42 @@ for l, froot in fubxletters.items():
 # Process the base station C file to get its fixed GPS position
 #
 import pandas
-from utils import genconfig, readposfile
+from ubxpostutils import genconfig, readposfile
 
 rnx2rtkpexe = "/home/julian/extrepositories/RTKLIB-rtkexplorer/app/rnx2rtkp/gcc/rnx2rtkp"
 
-fbaseCfixedpos = os.path.join(fdir, "baseCpos.txt")
 fbaseC = fubxletters["C"]
 fbaseCobs = fbaseC+".obs"
 fbaseCnav = fbaseC+".nav"
-if bforce or not os.path.exists(fbaseCfixedpos):
-    fposC = fbaseC+".pos"
+fbaseCpos = fbaseC+".pos"
+if bforce or not os.path.exists(fbaseCpos):
     fconfig = genconfig(fdir, ["out-solformat      =llh", "pos1-posmode       =single"])
-    print("processing", fposC) 
-    k = subprocess.run([rnx2rtkpexe, "-k", fconfig, "-o", fposC, fbaseCobs, fbaseCnav], 
+    print("processing", fbaseCpos)
+    k = subprocess.run([rnx2rtkpexe, "-k", fconfig, "-o", fbaseCpos, fbaseCobs, fbaseCnav], 
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print(k.stderr.decode())
     print(k.stdout.decode())
     
-    w = readposfile(fposC)
-    baselat, baselng, basealt = w.lat.mean(), w.lng.mean(), w.alt.mean()
-    print("lng %f (%f)\nlat %f (%f)\nalt %f (%f)\nfrom %d points" % \
-          (baselat, w.lat.std(), baselng, w.lng.std(), basealt, w.alt.std(), len(w)))
-    fsout = open(fbaseCfixedpos, "w")
-    fsout.write("%%\n%.8f %.8f %.3f REF Base\n" % (baselat, baselng, basealt))
-    fsout.close()
-
+w = readposfile(fbaseCpos)
+baselat, baselng, basealt = w.lat.mean(), w.lng.mean(), w.alt.mean()
+print("lng %f (%f)\nlat %f (%f)\nalt %f (%f)\nfrom %d points" % \
+      (baselat, w.lat.std(), baselng, w.lng.std(), basealt, w.alt.std(), len(w)))
 
 #
 # Finally process each of the A and B values to make their pos files
 #
-fconfig = genconfig(fdir, ["out-solformat      =llh", 
-                           "pos1-posmode       =kinematic", 
-                           "file-staposfile    =%s"%fbaseCfixedpos])
+if bsingle:
+    clines = ["out-solformat      =llh", 
+              "pos1-posmode       =single" ]
+else:
+    clines = ["out-solformat      =llh", 
+              "pos1-posmode       =kinematic", 
+              "ant2-postype       =llh",
+              "ant2-pos1          =%s" % baselat, 
+              "ant2-pos2          =%s" % baselng, 
+              "ant2-pos3          =%s" % basealt ]
+    
+fconfig = genconfig(fdir, clines)
 
 for L in "AB":
     if L not in fubxletters:
@@ -77,10 +91,13 @@ for L in "AB":
     fposL = fbaseL+".pos"
     fobsL = fbaseL+".obs"
     if os.path.exists(fobsL):
-        print("processing", fposL)
-        k = subprocess.run([rnx2rtkpexe, "-k", fconfig, "-o", fposL, fobsL, fbaseCobs, fbaseCnav], 
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print("\nprocessing", ("single" if bsingle else "kinematic"), fposL)
+        popenargs = [ rnx2rtkpexe, "-k", fconfig, "-o", fposL, fobsL ]
+        if bsingle:
+            popenargs.append(fbaseL+".nav")
+        else:
+            popenargs.extend([fbaseCobs, fbaseCnav])
+        k = subprocess.run(popenargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(k.stderr.decode())
         print(k.stdout.decode())
         w = readposfile(fposL)
-    

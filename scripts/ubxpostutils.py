@@ -12,6 +12,17 @@ def genconfig(fdir, clines):
     fcout.close()
     return fconfig
 
+
+# w.Q  1:Fixed, solution by carrier-based relative positioning and the integer ambiguity is properly resolved.
+#      2:Float, solution by carrier‐based relative positioning but the integer ambiguity is not resolved.
+#      3:Reserved
+#      4:DGPS, solution by code‐based DGPS solutionsor single point positioning with SBAS corrections 
+#      5:Single, solution by single point positioning
+# w.ns    Number of satellites
+# w.sd()  Standard deviation errors (part of the covariance matrix)
+# w.age   Age differential between rover and base
+# w.ratio ratio test of integer ambiguity between residuals of best and second best integer vector
+                    
 def readposfile(fpos):
     for sr, l in enumerate(open(fpos)):
         if l[0] != "%":
