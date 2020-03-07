@@ -1,4 +1,4 @@
-import threading, socket, queue
+import threading, socket, queue, subprocess
 import numpy, pandas
 import math, time, datetime, random
 
@@ -213,3 +213,75 @@ class DarknessMeasureFlash(threading.Thread):
                 print(e, type(e))
                 break  # might be a syntax error
 
+
+
+class RtkRcvController(threading.Thread):
+    def __init__(self, fconfig, telnetport=9049):
+        threading.Thread.__init__(self, daemon=True)
+        
+        self.outputlines = [ ]
+
+        # run from command line without the -p
+        frtkrcv = "/home/julian/extrepositories/RTKLIB-rtkexplorer/app/rtkrcv/gcc/rtkrcv -p %d -s -o %s" % (telnetport, fconfig)
+        print(frtkrcv)
+        
+        self.rtkrcvprocess = subprocess.Popen(frtkrcv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        #print(rtkrcvprocess.stdout.read())
+        print("process started", self.rtkrcvprocess.poll())
+        time.sleep(1)
+        
+        self.rtkrcvsocket = socket.socket()
+        self.rtkrcvsocket.connect(socket.getaddrinfo("localhost", telnetport)[0][-1])
+        print("rtkrcvsocket open")
+
+    def sendrcvcmd(self, s):
+        self.outputlines.clear()
+        self.rtkrcvsocketfile.write(s.encode()+b"\r\n")
+        time.sleep(0.5)
+        return ("\n".join(map(str, self.outputlines)))
+        
+    def run(self):
+        self.rtkrcvsocketfile = self.rtkrcvsocket.makefile('rwb', 0)
+        self.rtkrcvsocketfile.write(b"h\r\n")
+        while True:
+            try:
+                l = self.rtkrcvsocketfile.readline()
+                self.outputlines.append(l)
+                if l[:10] == b"password: ":
+                    print("<**> sending back a password")
+                    self.rtkrcvsocketfile.write(b"admin\r\n")
+                    time.sleep(2)
+                if l[:19] == b"rtk server shutdown":
+                    print("<**> shutdown detected")
+                    time.sleep(1)
+                    break
+                    
+            except ConnectionRefusedError as e:
+                print(e, type(e))
+                self.lastexception = e
+                time.sleep(2)
+            except ValueError as e:
+                print(e, type(e))
+                self.lastexception = e
+            except IndexError as e:
+                print(e, type(e))
+                self.lastexception = e
+            except Exception as e:
+                self.lastexception = e
+                print(e, type(e))
+                break  # might be a syntax error
+        
+        self.rtkrcvprocess.kill()
+        
+# rtkrcvc = RtkRcvController(telnetport=9049)
+# rtkrcvc.start()
+# rtkrcvc.sendrcvcmd("h")
+
+# see the status of the streams and how many bytes have come through
+# rtkrcvc.sendrcvcmd("stream")  
+
+# see the status of the numbers
+# rtkrcvc.sendrcvcmd("status")  
+
+# shutdown, which if detected confirmed, ends the thread
+# rtkrcvc.sendrcvcmd("shutdown")  

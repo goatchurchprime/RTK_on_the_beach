@@ -63,10 +63,23 @@ if bforce or not os.path.exists(fbaseCpos):
     print(k.stderr.decode())
     print(k.stdout.decode())
     
+print("\ninitial fixed station position guess:")
 w = readposfile(fbaseCpos)
 baselat, baselng, basealt = w.lat.mean(), w.lng.mean(), w.alt.mean()
-print("lng %f (%f)\nlat %f (%f)\nalt %f (%f)\nfrom %d points" % \
-      (baselat, w.lat.std(), baselng, w.lng.std(), basealt, w.alt.std(), len(w)))
+baselatstd, baselngstd, basealtstd = w.lat.std(), w.lng.std(), w.alt.std()
+print("lng %f (std %f)\nlat %f (std %f)\nalt %f (std %f)\nfrom %d points" % \
+      (baselat, baselatstd, baselng, baselngstd, basealt, basealtstd, len(w)))
+
+baselatwindow, baselngwindow, basealtwindow = max(0.001, baselatstd), max(0.001, baselngstd), max(50, basealtstd) 
+wwindow = w[(w.lat>baselat-baselatwindow) & (w.lat<baselat+baselatwindow) & \
+            (w.lng>baselng-baselngwindow) & (w.lng<baselng+baselngwindow) & \
+            (w.alt>basealt-basealtwindow) & (w.alt<basealt+basealtwindow)]
+print("\nnew fixed station position guess (after filtering outliers):")
+baselat, baselng, basealt = wwindow.lat.mean(), wwindow.lng.mean(), wwindow.alt.mean()
+baselatstd, baselngstd, basealtstd = wwindow.lat.std(), wwindow.lng.std(), wwindow.alt.std()
+print("lng %f (std %f)\nlat %f (std %f)\nalt %f (std %f)\nfrom %d points" % \
+      (baselat, baselatstd, baselng, baselngstd, basealt, basealtstd, len(wwindow)))
+
 
 #
 # Finally process each of the A and B values to make their pos files
@@ -77,10 +90,13 @@ if bsingle:
 else:
     clines = ["out-solformat      =llh", 
               "pos1-posmode       =kinematic", 
+              "pos1-soltype       =combined",
               "ant2-postype       =llh",
               "ant2-pos1          =%s" % baselat, 
               "ant2-pos2          =%s" % baselng, 
               "ant2-pos3          =%s" % basealt ]
+#stats-prnaccelh    =10.0       # (m/s^2)
+#stats-prnaccelv    =10.0       # (m/s^2)
     
 fconfig = genconfig(fdir, clines)
 
