@@ -1,8 +1,26 @@
+### New notes for the components
+
+An Android device serving a hotspot has ipnumber 192.168.43.1  The app https://github.com/Future-Hangglider/Hanglog3 runs in the foreground listening for connections on port 9042.  Multiple ESP32s operating Ublox M8T GPS receivers connect to it with ?code running on them.  On connection the ESP32 sends its identification string AAAA, BBBB or CCCC.  
+
+The app has a display of incoming connections connections, and has onscreen controls to save these streams of data to separate files in the Android device's memory.  There is also an option to forward these streams of data to another server through a socket over the internet if the device has mobile data.
+
+A computer connected to the hotspot can make multiple connections to this app and request to receive any of these streams by sending an identification stream of -AAA, -BBB, -CCC
+
+This interface can be driven from Python scripts or from RTKnavi which can be configured to send these special strings on connection and which is designed to process raw streams of Ublox GPS data. ?note here on which record is being recorded from the M8T datasheet.
+
+> python scripts/ubxstreamtofiles.py -t 10 junkdata
+
+
+
+
+
+## Old notes insuffient to work out what I was doing
+
 ### RTK_on_the_beach
 
 Scripts, workflows and notebooks to guide a person on a sandy beach
 
-This code depends on the Android App https://github.com/Future-Hangglider/Hanglog3 to connect to the ESP32s 
+This code depends on the Android App to connect to the ESP32s 
 on the UBX M8T units and either record the data streams to files or forward to sockets on a PC 
 where rtkrcv is running.
 
