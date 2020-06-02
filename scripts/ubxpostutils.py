@@ -1,4 +1,4 @@
-import shutil, os, pandas
+import shutil, os, pandas, math
 
 def genconfig(fdir, clines):
     fconfigtemplate = "/home/julian/repositories/RTK_on_the_beach/conf/template.conf"
@@ -23,12 +23,20 @@ def genconfig(fdir, clines):
 # w.age   Age differential between rover and base
 # w.ratio ratio test of integer ambiguity between residuals of best and second best integer vector
                     
-def readposfile(fpos):
+def readposfile(fpos, lat0=None, lng0=None):
     for sr, l in enumerate(open(fpos)):
         if l[0] != "%":
             break
     w = pandas.read_csv(fpos, skiprows=sr-1, sep="\s+")
     w.rename(columns={"latitude(deg)":"lat", "longitude(deg)":"lng", "height(m)":"alt"}, inplace=True)
+    
+    if lat0 is not None:
+        earthrad = 6378137
+        latfac = 2*math.pi*earthrad/360
+        lngfac = latfac*math.cos(math.radians(lat0))
+        w["y"] = (w.lat - lat0)*latfac
+        w["x"] = (w.lng - lng0)*lngfac
+        
     w["time"] = pandas.to_datetime(w["%"]+" "+w["UTC"])
     w.drop(["%", "UTC"], 1, inplace=True)
     w.set_index("time", inplace=True)

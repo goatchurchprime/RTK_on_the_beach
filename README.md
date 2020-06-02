@@ -6,7 +6,9 @@ The stream of data from the ESP32 device are binary packets of type UBX-RXM-RAWX
 
 The Hanglog3 app displays the incoming connections in a table.  Green is a good connection, and the string shown is (recordnumber#number_of_good_satellites) as extracted from the UBX-NAV-SVINFO records, so you can tell immediately if something is bad with the antenna or GPS configuration.
 
-There are three options for acquiring the Ublox M8T data stream.
+#### Acquiring the data from the Android device
+
+There are three options for acquiring the Ublox M8T data streams that are being received by the Hanglog3 app from the ESP32s through the TCP connections.
 
 1) The onscreen control 'GoLog' starts and stops the saving these streams of data as separate files in a directory in the Android device's memory.  The name of the directory is in the top panel.
 
@@ -23,10 +25,9 @@ The following script fetches 10 seconds of data from these streams and saves '.u
 > python scripts/ubxstreamtofiles.py -t 10 sparedata
 
 
+#### Processing the Ublox M8T data with RTK
 
 
-
-!!We should have a wireless same interface into Hanglog3 for downloading any .UBX files that have been acquired in flight so there is no USB connecting required.
 
 This interface can be driven from Python scripts or from RTKnavi which can be configured to send these special strings on connection and which is designed to process raw streams of Ublox GPS data. 
 
