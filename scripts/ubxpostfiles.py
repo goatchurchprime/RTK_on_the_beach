@@ -1,3 +1,5 @@
+#!python
+
 # 
 # Use this code for post-processing the UBX files from base and two rovers
 # Where esp32s have Future-Hangglider/hangspotdetection/esp32code/HangUBXM8TWingtip.ipynb
@@ -51,34 +53,35 @@ from ubxpostutils import genconfig, readposfile
 
 rnx2rtkpexe = "/home/julian/extrepositories/RTKLIB-rtkexplorer/app/rnx2rtkp/gcc/rnx2rtkp"
 
-fbaseC = fubxletters["C"]
-fbaseCobs = fbaseC+".obs"
-fbaseCnav = fbaseC+".nav"
-fbaseCpos = fbaseC+".pos"
-if bforce or not os.path.exists(fbaseCpos):
-    fconfig = genconfig(fdir, ["out-solformat      =llh", "pos1-posmode       =single"])
-    print("processing", fbaseCpos)
-    k = subprocess.run([rnx2rtkpexe, "-k", fconfig, "-o", fbaseCpos, fbaseCobs, fbaseCnav], 
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print(k.stderr.decode())
-    print(k.stdout.decode())
-    
-print("\ninitial fixed station position guess:")
-w = readposfile(fbaseCpos)
-baselat, baselng, basealt = w.lat.mean(), w.lng.mean(), w.alt.mean()
-baselatstd, baselngstd, basealtstd = w.lat.std(), w.lng.std(), w.alt.std()
-print("lng %f (std %f)\nlat %f (std %f)\nalt %f (std %f)\nfrom %d points" % \
-      (baselat, baselatstd, baselng, baselngstd, basealt, basealtstd, len(w)))
+if "C" in fubxletters:
+    fbaseC = fubxletters["C"]
+    fbaseCobs = fbaseC+".obs"
+    fbaseCnav = fbaseC+".nav"
+    fbaseCpos = fbaseC+".pos"
+    if bforce or not os.path.exists(fbaseCpos):
+        fconfig = genconfig(fdir, ["out-solformat      =llh", "pos1-posmode       =single"])
+        print("processing", fbaseCpos)
+        k = subprocess.run([rnx2rtkpexe, "-k", fconfig, "-o", fbaseCpos, fbaseCobs, fbaseCnav], 
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(k.stderr.decode())
+        print(k.stdout.decode())
 
-baselatwindow, baselngwindow, basealtwindow = max(0.001, baselatstd), max(0.001, baselngstd), max(50, basealtstd) 
-wwindow = w[(w.lat>baselat-baselatwindow) & (w.lat<baselat+baselatwindow) & \
-            (w.lng>baselng-baselngwindow) & (w.lng<baselng+baselngwindow) & \
-            (w.alt>basealt-basealtwindow) & (w.alt<basealt+basealtwindow)]
-print("\nnew fixed station position guess (after filtering outliers):")
-baselat, baselng, basealt = wwindow.lat.mean(), wwindow.lng.mean(), wwindow.alt.mean()
-baselatstd, baselngstd, basealtstd = wwindow.lat.std(), wwindow.lng.std(), wwindow.alt.std()
-print("lng %f (std %f)\nlat %f (std %f)\nalt %f (std %f)\nfrom %d points" % \
-      (baselat, baselatstd, baselng, baselngstd, basealt, basealtstd, len(wwindow)))
+    print("\ninitial fixed station position guess:")
+    w = readposfile(fbaseCpos)
+    baselat, baselng, basealt = w.lat.mean(), w.lng.mean(), w.alt.mean()
+    baselatstd, baselngstd, basealtstd = w.lat.std(), w.lng.std(), w.alt.std()
+    print("lng %f (std %f)\nlat %f (std %f)\nalt %f (std %f)\nfrom %d points" % \
+          (baselat, baselatstd, baselng, baselngstd, basealt, basealtstd, len(w)))
+
+    baselatwindow, baselngwindow, basealtwindow = max(0.001, baselatstd), max(0.001, baselngstd), max(50, basealtstd) 
+    wwindow = w[(w.lat>baselat-baselatwindow) & (w.lat<baselat+baselatwindow) & \
+                (w.lng>baselng-baselngwindow) & (w.lng<baselng+baselngwindow) & \
+                (w.alt>basealt-basealtwindow) & (w.alt<basealt+basealtwindow)]
+    print("\nnew fixed station position guess (after filtering outliers):")
+    baselat, baselng, basealt = wwindow.lat.mean(), wwindow.lng.mean(), wwindow.alt.mean()
+    baselatstd, baselngstd, basealtstd = wwindow.lat.std(), wwindow.lng.std(), wwindow.alt.std()
+    print("lng %f (std %f)\nlat %f (std %f)\nalt %f (std %f)\nfrom %d points" % \
+          (baselat, baselatstd, baselng, baselngstd, basealt, basealtstd, len(wwindow)))
 
 
 #

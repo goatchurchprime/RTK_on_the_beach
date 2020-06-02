@@ -1,14 +1,35 @@
 ### New notes for the components
 
-An Android device serving a hotspot has ipnumber 192.168.43.1  The app https://github.com/Future-Hangglider/Hanglog3 runs in the foreground listening for connections on port 9042.  Multiple ESP32s operating Ublox M8T GPS receivers connect to it with ?code running on them.  On connection the ESP32 sends its identification string AAAA, BBBB or CCCC.  
+An Android device serving a hotspot has ipnumber 192.168.43.1  The app https://github.com/Future-Hangglider/Hanglog3 runs in the foreground listening for TCP connections on port 9042.  Multiple ESP32s operating Ublox M8T GPS receivers connect to it with Future-Hangglider/HanglogESP32 code running on them.  On connection the ESP32 sends its identification string AAAA, BBBB or CCCC.  
 
-The app has a display of incoming connections connections, and has onscreen controls to save these streams of data to separate files in the Android device's memory.  There is also an option to forward these streams of data to another server through a socket over the internet if the device has mobile data.
+The stream of data from the ESP32 device are binary packets of type UBX-RXM-RAWX, UBX-RXM-SFRBX, UBX-NAV-CLOCK and UBX-NAV-SVINFO from the Ublox M8T receiver as described in the document UBX-13003221.  There are no NMEA strings as these are ascii and would clash with the raw binary data required for RTK processing.  
 
-A computer connected to the hotspot can make multiple connections to this app and request to receive any of these streams by sending an identification stream of -AAA, -BBB, -CCC
+The Hanglog3 app displays the incoming connections in a table.  Green is a good connection, and the string shown is (recordnumber#number_of_good_satellites) as extracted from the UBX-NAV-SVINFO records, so you can tell immediately if something is bad with the antenna or GPS configuration.
 
-This interface can be driven from Python scripts or from RTKnavi which can be configured to send these special strings on connection and which is designed to process raw streams of Ublox GPS data. ?note here on which record is being recorded from the M8T datasheet.
+There are three options for acquiring the Ublox M8T data stream.
 
-> python scripts/ubxstreamtofiles.py -t 10 junkdata
+1) The onscreen control 'GoLog' starts and stops the saving these streams of data as separate files in a directory in the Android device's memory.  The name of the directory is in the top panel.
+
+To download the files without having to connect a USB cable and find where they are in the file system, use the script:
+
+> python scripts/fetchhanglogfiles.py
+
+2) There is also an option 'DDsock' to forward these streams of data to another server through a socket over the internet, if the device has mobile data.
+
+3) A computer connected by wifi to the Android device hotspot can make multiple TCP connections to the Hanglog3 app and request to receive any of these streams by sending an identification header of -AAA, -BBB, -CCC.  
+
+The following script fetches 10 seconds of data from these streams and saves '.ubx' files into the given directory:
+
+> python scripts/ubxstreamtofiles.py -t 10 sparedata
+
+
+
+
+
+!!We should have a wireless same interface into Hanglog3 for downloading any .UBX files that have been acquired in flight so there is no USB connecting required.
+
+This interface can be driven from Python scripts or from RTKnavi which can be configured to send these special strings on connection and which is designed to process raw streams of Ublox GPS data. 
+
 
 
 

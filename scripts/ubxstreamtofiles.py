@@ -1,4 +1,10 @@
+
+# Script to connect to Hanglog3 through 3 socket connections and receive and log
+# streamed UBX binary data to a file
+
 import argparse
+
+hanglogaddr = socket.getaddrinfo("192.168.43.1", 9042)[0][-1]
 
 parser = argparse.ArgumentParser(description='Hanglog3 stream log UBX files')
 parser.add_argument('-t','--time', help='Time in seconds')
@@ -12,11 +18,11 @@ endthreads = False
 filesizes = { }
 
 def readstream(identletter):
-    identheader = ("-%s%s%s" % (identletter,identletter,identletter)).encode()
+    identheader = ("-%s%s%s\n" % (identletter,identletter,identletter)).encode()
     datafilename = os.path.join(datadir, "data%s.ubx" % identletter)
     
     ss = socket.socket()
-    ss.connect(socket.getaddrinfo("192.168.43.1", 9042)[0][-1])
+    ss.connect(hanglogaddr)
     ss.settimeout(0.1)
     s = ss.makefile('rwb', 0)
     try:
@@ -42,11 +48,11 @@ def readstream(identletter):
             filesizes[identletter] += len(b)
     print("thread", identletter, "ended")
 
-threading.Thread(target=readstream, args=("A",), daemon=True).start()
-threading.Thread(target=readstream, args=("B",), daemon=True).start()
-threading.Thread(target=readstream, args=("C",), daemon=True).start()
+for x in "ABC":
+    threading.Thread(target=readstream, args=(x,), daemon=True).start()
+    time.sleep(0.2)
 for i in range(int(tseconds)+1):
     time.sleep(1)
-    print(filesizes)
+    print(i, filesizes)
 endthreads = True
-
+time.sleep(0.5)
