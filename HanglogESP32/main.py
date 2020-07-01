@@ -1,54 +1,64 @@
-import time, machine
+import time, machine, os
 from ubxm8t import uartUBX, initUBX
-from utils import connectActivePhone
+from utils import deviceletter, connectActivePhone, initledflashtimer, setledflashtime
+from machine import Pin, reset_cause, SPI
 import socket, uselect
 
+fconfig = dict(x.strip().split(None, 1)  for x in open("config.txt"))
 
 # delay long enough for Ctrl-C before the wlan bricks it for debugging
 # reset_cause=1:PWRON_RESET, 2:HARD, 5:SOFT (brownout detected)
-pled = machine.Pin(2, machine.Pin.OUT)
+pinled = Pin(int(fconfig["pinled"]), Pin.OUT)
 for i in range(2*(machine.reset_cause())):
-    pled.value(1-(i%2))
+    pinled.value(1-(i%2))
     time.sleep_ms(400)  
 
+# connect to SDCard if one exists
+sddir = None
+if "sdcard" in fconfig:
+    from sdcard import SDCard
+    vsdcard = fconfig["sdcard"].split(",")
+    spisd = SPI(-1, sck=Pin(int(vsdcard[2])), mosi=Pin(int(vsdcard[3])), miso=Pin(int(vsdcard[4])))
+    try:
+        sd = SDCard(spisd, Pin(int(vsdcard[1])))
+        sddir = '/'+vsdcard[0]
+        os.mount(sd, sddir)
+        print(os.listdir(sddir))
+    except OSError as e:
+        print("No SD card", e)
+        for i in range(21):
+            pinled.value(i%2)
+            time.sleep_ms(780 if (i%4) == 1 else 80)
+        sddir = None
+        
 # Set up flashing LED timer (better control than PWM)
-pgled = machine.Pin(23, machine.Pin.OUT)
-timeracc = 0
-timermax = 1000
-timerlight = 100
-timeradd = 50
-def timercallback(t):
-    global timeracc
-    timeracc = (timeracc + timeradd)%timermax
-    pgled.value(int(timeracc<timerlight))
-timer = machine.Timer(-1)
-timer.init(period=50, mode=machine.Timer.PERIODIC, callback=timercallback)
+pingled = Pin(int(fconfig["pingled"]))  if "pingled" in fconfig  else None
+if pingled:
+    initledflashtimer(pingled)
 
 # Serial connection to the UBlox GPS device
 print("Initializing UBX")
 initUBX()
 for i in range(11):
-    pled.value(i%2)
+    pinled.value(i%2)
     time.sleep_ms(200)
 
-print("RESET_CAUSE", machine.reset_cause())
-deviceletter = open("deviceletter.txt", "r").read()
-print("deviceletter", deviceletter)
+print("RESET_CAUSE", reset_cause())
 
-while True:
-    androidipnumber, portnumber = connectActivePhone(pled)
+for k in range(2 if sddir else 10000):
+    androidipnumber, portnumber = connectActivePhone(fconfig, pinled)
     if androidipnumber is not None:
         break
+## Replace this with single loop!              
     for j in range(3):
         for i in range(7):
-            pled.value(i%2)
+            pinled.value(i%2)
             time.sleep_ms(100)
         time.sleep_ms(800)
 
 for i in range(21):
-    pled.value(i%2)
+    pinled.value(i%2)
     time.sleep_ms(80)
-
 
 ubxbuffer = bytearray(1000)
 mubxbuffer = memoryview(ubxbuffer)
@@ -56,7 +66,7 @@ timelastledsignal = 0
 totalbytes = 0
 obj = None
 while True:
-    timermax = 4000  # slow down signal to show it's broken
+    setledflashtime(50, 2000, 4000) 
     try:
         ss = socket.socket()
         ss.settimeout(1)
@@ -74,18 +84,20 @@ while True:
                     n = uartUBX.readinto(ubxbuffer)
                     if n is not None:
                         s.write(mubxbuffer[:n])
-                        pled.value(1-pled.value())
+                        pinled.value(1-pinled.value())
                         totalbytes += n
                     if time.ticks_ms() - timelastledsignal > 2000:
-                        timermax = 3000  # slow down signal to show it's broken
+                        setledflashtime(50, 1500, 3000)  # slow down signal to show it's broken
 
                 if obj == s and evt == uselect.POLLIN:
                     timelastledsignal = time.ticks_ms()
+                    setledflashtime(50, 200, 1000) 
                     timermax = 1000
+                    setledflashtime(1000, 100) 
                     l = s.readline()
                     try:
                         print(l)
-                        timeradd, timerlight = list(map(int, l.split()))
+                        setledflashtime(*list(map(int, l.split())))
                     except ValueError as e:
                         print("ValueError", e)
     except OSError as e:

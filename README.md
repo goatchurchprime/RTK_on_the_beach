@@ -10,13 +10,17 @@ The Hanglog3 app displays the incoming connections in a table.  Green is a good 
 
 There are three options for acquiring the Ublox M8T data streams that are being received by the Hanglog3 app from the ESP32s through the TCP connections.
 
+
 1) The onscreen control 'GoLog' starts and stops the saving these streams of data as separate files in a directory in the Android device's memory.  The name of the directory is in the top panel.
 
-To download the files without having to connect a USB cable and find where they are in the file system, use the script:
+
+1A) To download the files without having to connect a USB cable and find where they are in the file system, use the script which creates an interactive user interface:
 
 > python scripts/fetchhanglogfiles.py
 
-2) There is also an option 'DDsock' to forward these streams of data to another server through a socket over the internet, if the device has mobile data.
+
+2) There is an option 'DDsock' to forward these streams of data to another server through a socket over the internet, if the device has mobile data.
+
 
 3) A computer connected by wifi to the Android device hotspot can make multiple TCP connections to the Hanglog3 app and request to receive any of these streams by sending an identification header of -AAA, -BBB, -CCC.  
 
@@ -27,7 +31,13 @@ The following script fetches 10 seconds of data from these streams and saves '.u
 
 #### Processing the Ublox M8T data with RTK
 
+Post-processing the binary GPS data into positions can be done singly, or in reference to the base station and requires a lot of configuration data.  This has been put into a script that managed generating the '.nav', '.obs' and finally the output '.pos' files from the original .'ubx'.
 
+The '-b' option tells which is the base station.  The default is 'C'.  
+
+> python scripts/ubxpostfiles.py -bA hanglog/20200602092356/
+
+(Should make an xy plot preview of the pos files)
 
 This interface can be driven from Python scripts or from RTKnavi which can be configured to send these special strings on connection and which is designed to process raw streams of Ublox GPS data. 
 

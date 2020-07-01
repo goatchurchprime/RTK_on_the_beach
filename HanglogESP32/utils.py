@@ -1,13 +1,19 @@
 import network, socket, time, machine, os
 
+deviceletter = open("deviceletter.txt", "r").read()
+print("deviceletter", deviceletter)
+
 si = network.WLAN(network.STA_IF) 
 
 # Connect to Blackview/S5 (Android) phone
-def connectActivePhone(pled):
+def connectActivePhone(fconfig, pled):
+    cdelimeter = fconfig.get("cdelimeter", ",")
     hotspots = { }
-    for l in open("hotspots.txt", "rb"):
-        s = l.split()
-        hotspots[s[0]] = (s[1], s[2].decode(), int(s[3]))
+    for i in range(100):
+        l = fconfig.get("connection%d" % i)
+        if not l:   break
+        s = l.split(cdelimeter)
+        hotspots[s[0].encode()] = (s[1], s[2], int(s[3]))
     print(hotspots)
     
     si.active(True)
@@ -31,15 +37,38 @@ def connectActivePhone(pled):
     return host, port
 
 
-def updatehotspots(c="hotspots.txt"):
+# Set up flashing LED timer (better control than PWM)
+timeracc = 0
+timermax = 1000
+timerlight = 100
+timeradd = 50
+pgled = None
+timer = None
+def timercallback(t):
+    global timeracc
+    timeracc = (timeracc + timeradd)%timermax
+    pgled.value(int(timeracc<timerlight))
+
+def initledflashtimer(lpgled):
+    global timer, pgled
+    pgled = lpgled
+    timer = machine.Timer(-1)
+    timer.init(period=50, mode=machine.Timer.PERIODIC, callback=timercallback)
+
+def setledflashtime(ltimeradd, ltimerlight, ltimermax=1000):
+    global timeradd, timerlight, timermax
+    timeradd, timerlight, timermax = ltimeradd, ltimerlight, ltimermax
+
+    
+def updateconfig(c="config.txt"):
     while True:
         print("\n\n", c, ":\n")
         with open(c) as fin:
             for x in fin:
                 print(x.strip())
-        y = input("\ninput line> ")
+        y = input("input line> ")
         ys = y.split()
-        if len(ys) != 1 and len(ys) != 4:
+        if not 1 <= len(ys) <= 2:
             return
         cd = "E"+c
         with open(cd, "w") as fout:
@@ -48,15 +77,18 @@ def updatehotspots(c="hotspots.txt"):
                 for x in fin:
                     xs = x.split()
                     if ys is not None and ys[0] == xs[0]:
-                        if len(ys) != 1:
+                        if len(ys) == 2:
                             fout.write(y)
                             fout.write("\n")
                         ys = None
                     else:
                         fout.write(x)
-            if ys is not None and len(ys) != 1:
+            if ys is not None and len(ys) == 2:
                 if x is not None:
                     fout.write("\n")
                 fout.write(y)
                 fout.write("\n")
         os.rename(cd, c)
+        
+        
+        
