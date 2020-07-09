@@ -1,7 +1,12 @@
 import socket, time, os
 
+#
 # Script for connecting to Hanglog3 on the android device and 
 # listing, downloading or erasing directories of logged data
+#
+# Simply execute when connected to the androind device, since it 
+# has it's own Command Line User Interface
+#
 
 hanglogaddr = socket.getaddrinfo("192.168.43.1", 9042)[0][-1]
 print("Script to download files from Android device through Hanglog3")
@@ -57,47 +62,48 @@ def hanglog3erase(hfile):
     print("Hanglog:", row)
     ss.close()
 
-while True:
-    fdirs = hanglog3listdir("hanglog")
-    print("\n\nhanglog directories:")
-    for i, fd in enumerate(fdirs):
-        print(" ", i, fd)
-    print()
-    choice = input("Choose directory: ")
-    if choice == "":
-        break
-    fdir = fdirs[int(choice)]
-
+if __name__ == "__main__":
     while True:
-        ffiles = hanglog3listdir("hanglog/%s" % fdir)
-        print("\n\n files:")
-        print("\n".join(ffiles))
+        fdirs = hanglog3listdir("hanglog")
+        print("\n\nhanglog directories:")
+        for i, fd in enumerate(fdirs):
+            print(" ", i, fd)
         print()
-        choice = input("Download, erase or go up [d/e/u]: ")
-        if choice == "d":
-            if not os.path.exists("hanglog"):
-                print("Making hanglog directory")
-                os.mkdir("hanglog")
-            ffdir = os.path.join("hanglog", fdir)
-            if not os.path.exists(ffdir):
-                print("Making %s directory" % ffdir)
-                os.mkdir(ffdir)
-            for ffile in ffiles:
-                hanglog3download("hanglog/%s/%s" % (fdir, ffile))
+        choice = input("Choose directory: ")
+        if choice == "":
+            break
+        fdir = fdirs[int(choice)]
 
-        elif choice == "e":
-            for ffile in ffiles:
-                hanglog3erase("hanglog/%s/%s" % (fdir, ffile))
-            hanglog3erase("hanglog/%s" % (fdir))
+        while True:
+            ffiles = hanglog3listdir("hanglog/%s" % fdir)
+            print("\n\n files:")
+            print("\n".join(ffiles))
+            print()
+            choice = input("Download, erase or go up [d/e/u]: ")
+            if choice == "d":
+                if not os.path.exists("hanglog"):
+                    print("Making hanglog directory")
+                    os.mkdir("hanglog")
+                ffdir = os.path.join("hanglog", fdir)
+                if not os.path.exists(ffdir):
+                    print("Making %s directory" % ffdir)
+                    os.mkdir(ffdir)
+                for ffile in ffiles:
+                    hanglog3download("hanglog/%s/%s" % (fdir, ffile))
+
+            elif choice == "e":
+                for ffile in ffiles:
+                    hanglog3erase("hanglog/%s/%s" % (fdir, ffile))
+                hanglog3erase("hanglog/%s" % (fdir))
+                break
+
+            elif choice == "u":
+                break
+            else:
+                break
+
+        if choice == "":
             break
-            
-        elif choice == "u":
-            break
-        else:
-            break
-            
-    if choice == "":
-        break
 
 
 

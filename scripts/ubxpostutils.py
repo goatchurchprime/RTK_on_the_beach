@@ -29,7 +29,7 @@ def readposfile(fpos, lat0=None, lng0=None):
             break
     w = pandas.read_csv(fpos, skiprows=sr-1, sep="\s+")
     w.rename(columns={"latitude(deg)":"lat", "longitude(deg)":"lng", "height(m)":"alt"}, inplace=True)
-    
+
     if lat0 is not None:
         earthrad = 6378137
         latfac = 2*math.pi*earthrad/360
