@@ -4,16 +4,16 @@
 
 import argparse
 
-hanglogaddr = socket.getaddrinfo("192.168.43.1", 9042)[0][-1]
-
 parser = argparse.ArgumentParser(description='Hanglog3 stream log UBX files')
-parser.add_argument('-t','--time', help='Time in seconds')
+parser.add_argument('-t','--time', default=10, help='Time in seconds')
 parser.add_argument("fdir")
 args = parser.parse_args()
 tseconds = float(args.time)
 datadir = args.fdir
 
 import socket, time, threading, os
+
+hanglogaddr = socket.getaddrinfo("192.168.43.1", 9042)[0][-1]
 endthreads = False
 filesizes = { }
 

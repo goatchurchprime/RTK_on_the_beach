@@ -5,13 +5,14 @@ from machine import Pin, UART, SPI, ADC
 
 fconfig = dict(x.strip().split(None, 1)  for x in open("config.txt"))
 pinled = Pin(int(fconfig["pinled"]), Pin.OUT)
+pingled = Pin(int(fconfig["pingled"]), Pin.OUT)  if "pingled" in fconfig else None
 
 if "pinbatteryadc" in fconfig:
     s = fconfig["pinbatteryadc"].split(",")
     pinbatteryadc = ADC(Pin(int(s[0])))
     pinbatteryadc.atten(ADC.ATTN_11DB)  # 3.6V
     pinbatteryadc.width(ADC.WIDTH_12BIT)
-    batteryR1, batteryR2 = float(s[1]), float(s[2])
+    batteryR1, batteryR2, refVoltage = float(s[1]), float(s[2]), float(s[3])
 else:
     pinbatteryadc = None
 
@@ -20,7 +21,7 @@ def batteryvoltage():
         return 0.0
     return pinbatteryadc.read()/4096.0*3.6/batteryR2*(batteryR1+batteryR2)
     
-uartUBX = UART(1, baudrate=9600, rx=16, tx=17)
+uartUBX = UART(1, baudrate=9600, rx=16, tx=17, rxbuf=1024)
 streamUBX = uasyncio.stream.Stream(uartUBX)
 fdatebasedname = None  # SimpleDateFormat("'hdata-'yyyy-MM-dd'_'HH-mm-ss") extracted from GPS 
 
@@ -31,21 +32,21 @@ def mountsd():
     import sdcard
     s = fconfig["sdcard"].split(",")
     spisd = SPI(-1, sck=Pin(int(s[1])), mosi=Pin(int(s[2])), miso=Pin(int(s[3])))
-    sd = sdcard.SDCard(spisd, Pin(int(s[0])))
     try:
+        sd = sdcard.SDCard(spisd, Pin(int(s[0])))
         os.mount(sd, s[4])
     except OSError:
         print("Failed to mount sd", s)
+        sd = None
         return None
     return s[4]
 
-
 async def flashseq(seq):
+    print("flashseq", seq)
     for i, d in enumerate(seq):
         pinled.value(i%2)
         await asyncio.sleep_ms(d)
     pinled.value(0)
-
 
 #    
 # repeat connecting to wifi until giving up (if there is an SD card)    
@@ -61,7 +62,7 @@ async def wificonnect():
             else:
                 print("No fdatebasedname yet")
 
-        await flashseq((100,200,100,200,300))
+        await asyncio.sleep_ms(2000)
         cdelimeter = fconfig.get("cdelimeter", ",")
         hotspots = { }
         for i in range(100):
@@ -84,7 +85,7 @@ async def wificonnect():
         print("Choosing to connect to", wconn)
         si.connect(wconn, wpass)
         while si.status() == network.STAT_CONNECTING:
-            await flashseq((100,100))
+            await asyncio.sleep_ms(500)
 
         await asyncio.sleep(1)
         if si.isconnected():
@@ -109,6 +110,7 @@ async def extractdatermc():
                 mline = mline[mline.find(b"$"):]
             if mline[:1] == b"$" and mline[3:6] == b"RMC":
                 mline = mline.decode()
+                print("mmm", mline)
                 m = mline.split(",")
                 if len(m) >= 10:
                     mt, md = m[1], m[9]
