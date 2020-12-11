@@ -12,8 +12,9 @@ def genconfig(fdir, clines):
     fcout.close()
     return fconfig
 
-
+# https://support.geocue.com/aspsuite-gnss-quality-levels-explained/
 # w.Q  1:Fixed, solution by carrier-based relative positioning and the integer ambiguity is properly resolved.
+#      <--- this (Q=1) is the good one.  
 #      2:Float, solution by carrier‐based relative positioning but the integer ambiguity is not resolved.
 #      3:Reserved
 #      4:DGPS, solution by code‐based DGPS solutionsor single point positioning with SBAS corrections 

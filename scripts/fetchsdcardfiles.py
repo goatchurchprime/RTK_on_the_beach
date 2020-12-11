@@ -1,6 +1,8 @@
 
 #
 # This script will be combined with the hanglog file 
+# Needs to be on phone hotspot to which the GPS with SD card is connected
+#
 
 import socket, time
 

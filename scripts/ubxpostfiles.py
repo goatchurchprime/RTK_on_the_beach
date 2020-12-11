@@ -42,12 +42,13 @@ def makertkconfig(basepos=None):
             "pos1-posmode       =kinematic", 
             "pos1-soltype       =combined",
             "ant2-postype       =llh",
+            "pos1-elmask        =15",
+            "pos2-elmask        =15",
             "ant2-pos1          =%s" % baselat, 
             "ant2-pos2          =%s" % baselng, 
             "ant2-pos3          =%s" % basealt ]
               #stats-prnaccelh    =10.0       # (m/s^2)
               #stats-prnaccelv    =10.0       # (m/s^2)
-        
         
 def processrtktopos(fbaseL, fbaseC=None, basepos=None):
     fposL = fbaseL+".pos"
