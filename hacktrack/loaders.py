@@ -16,11 +16,12 @@ def linfuncZ(line):
     ax, ay, az = s16(line[11:15])*0.01, s16(line[16:20])*0.01, s16(line[21:25])*0.01        # acceleration
     gx, gy, gz = s16(line[26:30])*0.01, s16(line[31:35])*0.01, s16(line[36:40])*0.01        # gravity
     q0, q1, q2, q3 = s16(line[41:45]), s16(line[46:50]), s16(line[51:55]), s16(line[56:60]) # quaternion 
+    s = int(line[61:63], 16)
     if q0 == 0 and q1 == 0 and q2 == 0 and q3 == 0:  
         raise ValueError()
     #if max(abs(ax), abs(ay), abs(az))>50:
     #    raise ValueError()
-    return (t, ax, ay, az, gx, gy, gz, q0, q1, q2, q3)
+    return (t, ax, ay, az, gx, gy, gz, q0, q1, q2, q3, s)
 
 def processZquat(pZ):
     pZ["iqsq"] = 1/((pZ.q0**2 + pZ.q1**2 + pZ.q2**2 + pZ.q3**2))  # quaternion unit factor
@@ -233,8 +234,8 @@ def linfuncAA(lin):
 recargsW = ('W', linfuncW, ["w", "n"]) 
 recargsR = ('R', linfuncR, ["epoch", "e", "n", "f", "o", "devno"]) 
 recargsF = ('F', linfuncF, ["Pr"]) 
-recargsZ = ('Z', linfuncZ, ["ax", "ay", "az", "gx", "gy", "gz", "q0", "q1", "q2", "q3"]) 
-recargsY = ('Y', linfuncZ, ["ax", "ay", "az", "gx", "gy", "gz", "q0", "q1", "q2", "q3"]) 
+recargsZ = ('Z', linfuncZ, ["ax", "ay", "az", "gx", "gy", "gz", "q0", "q1", "q2", "q3", "s"]) 
+recargsY = ('Y', linfuncZ, ["ax", "ay", "az", "gx", "gy", "gz", "q0", "q1", "q2", "q3", "s"]) 
 recargsV = ('V', linfuncV, ["vel", "deg", "devno"])    # Vt000717A0v0050d002EE0
 recargsG = ('G', linfuncG, ["hG", "tG"])   # si7021Humidity meter
 recargsS = ('S', linfuncS, ["hS", "tS"])   # Humidity31 meter
