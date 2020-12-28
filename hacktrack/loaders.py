@@ -46,8 +46,14 @@ def processZquatA(pZ):  # the sensor from the phone
     pZ["heading"] = heading + 360*numpy.cumsum((heading.diff() < -180)*1 - (heading.diff() > 180)*1)
     return pZ
 
+def linfuncE(line):
+    t = int(line[2:10], 16)
+    m = int(line[11:13], 16)
+    d = int(line[14:18], 16)
+    return (t, m, d)
 
 Fkphmpsfac = 0.01*1000/3600
+
 def linfuncV(line):
     t = int(line[2:10], 16)
     v = int(line[11:15], 16)
@@ -231,6 +237,7 @@ def linfuncAA(lin):
     ax, ay, az = s16(line[12:16])/32768, s16(line[17:21])/32768, s16(line[22:26])/32768
     return (t, ax, ay, az)
 
+recargsE = ('E', linfuncE, ["m", "d"])
 recargsW = ('W', linfuncW, ["w", "n"]) 
 recargsR = ('R', linfuncR, ["epoch", "e", "n", "f", "o", "devno"]) 
 recargsF = ('F', linfuncF, ["Pr"]) 
@@ -253,6 +260,7 @@ recargsAV = ('aV', linfuncAV, ["vel", "deg"])
 recargsAU = ('aU', linfuncAU, ["b"]) 
 recargsAA = ('aA', linfuncAA, ["ax", "ay", "az"])
 
+
 # Grab the function lookups from above (hacky, should put into own object)
 recargsDict = { }
 for k, v in globals().copy().items():
@@ -260,7 +268,7 @@ for k, v in globals().copy().items():
         recargsDict[v[0]] = v
         
 
-rectypes = 'DFLQRVWYZUCPHISGNMOBX*'
+rectypes = 'EDFLQRVWYZUCPHISGNMOBX*'
 phrectypes = set('FZQVUA')
 
 def GLoadIGC(fname):
