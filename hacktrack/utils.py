@@ -69,7 +69,7 @@ def absorientacceleration(pZ):
 
 
 # Pure quaternion composition funcs that can work on pandas.Series, where:
-#    qvec(qmult(qa, qb), v) == qvec(qa, qvec(qb, v))
+# qvec(qmult(qa, qb), v) == qvec(qa, qvec(qb, v))
 def qvec(quat, avec):
     q0, q1, q2, q3 = quat
     ax, ay, az = avec
@@ -108,6 +108,25 @@ def qmult(quat0, quat1):
             -x1*z0 + y1*w0 + z1*x0 + w1*y0,
              x1*y0 - y1*x0 + z1*w0 + w1*z0)
 
+# this turns out to be the Savitzky-Golay filter
+sec1 = pandas.Timedelta(seconds=1)
+def curvefitdifferentiate(rx, ws, deg=3):
+    rx0 = rx.copy()
+    rx1 = rx.copy()
+    rx2 = rx.copy()
+    wt = ws*sec1
+    for n in range(len(rx)):
+        t = rx.index[n]
+        lx = rx[t-wt:t+wt]
+        ts = (lx.index - t)/sec1
+        weights = 1/((abs(ts)/ws)**2+1)
+        pm = numpy.polyfit(ts, lx, deg=deg, w=weights)
+        rx0.iloc[n] = numpy.polyval(pm, 0)
+        pm1 = numpy.polyder(pm)
+        rx1.iloc[n] = numpy.polyval(pm1, 0)
+        pm2 = numpy.polyder(pm, 2)
+        rx2.iloc[n] = numpy.polyval(pm2, 0)
+    return rx0, rx1, rx2
 
     
 def FiltFiltButter(s, f=0.004, n=3):
