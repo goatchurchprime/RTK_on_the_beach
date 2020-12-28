@@ -67,6 +67,48 @@ def absorientacceleration(pZ):
     pZ["m21"] = m21
     pZ["m22"] = m22
 
+
+# Pure quaternion composition funcs that can work on pandas.Series, where:
+#    qvec(qmult(qa, qb), v) == qvec(qa, qvec(qb, v))
+def qvec(quat, avec):
+    q0, q1, q2, q3 = quat
+    ax, ay, az = avec
+    iqsq = 1/((q0**2 + q1**2 + q2**2 + q3**2))
+
+    r00 = q0*q0*2 * iqsq
+    r11 = q1*q1*2 * iqsq
+    r22 = q2*q2*2 * iqsq
+    r33 = q3*q3*2 * iqsq
+    r01 = q0*q1*2 * iqsq
+    r02 = q0*q2*2 * iqsq
+    r03 = q0*q3*2 * iqsq
+    r12 = q1*q2*2 * iqsq
+    r13 = q1*q3*2 * iqsq
+    r23 = q2*q3*2 * iqsq
+
+    m00 = r00 - 1 + r11  # North.x
+    m01 = r12 + r03      # -North.y
+    m02 = r13 - r02      # =SinAttack
+    m10 = r12 - r03
+    m11 = r00 - 1 + r22
+    m12 = r23 + r01      # =SinRoll
+    m20 = r13 + r02
+    m21 = r23 - r01
+    m22 = r00 - 1 + r33
+
+    return (m00*ax+m01*ay+m02*az,
+            m10*ax+m11*ay+m12*az,
+            m20*ax+m21*ay+m22*az)
+
+def qmult(quat0, quat1):
+    w0, x0, y0, z0 = quat0
+    w1, x1, y1, z1 = quat1
+    return (-x1*x0 - y1*y0 - z1*z0 + w1*w0,
+             x1*w0 + y1*z0 - z1*y0 + w1*x0,
+            -x1*z0 + y1*w0 + z1*x0 + w1*y0,
+             x1*y0 - y1*x0 + z1*w0 + w1*z0)
+
+
     
 def FiltFiltButter(s, f=0.004, n=3):
     "Butterworth bidirectional filter on series signal"
