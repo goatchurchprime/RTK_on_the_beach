@@ -32,7 +32,7 @@ def processZquat(pZ):
     heading = 180 - numpy.degrees(numpy.arctan2(a00, -a01))
     #pZ["heading"] = heading  # below is code to unwind the heading.  get back to original by doing mod 360
     pZ["heading"] = heading + 360*numpy.cumsum((heading.diff() < -180)*1 - (heading.diff() > 180)*1)
-    pZ["bad"] = (abs(pZ.ax)>50) | (abs(pZ.ay)>50) | (abs(pZ.az)>50)
+    pZ["bad"] = (abs(pZ.ax)>50) | (abs(pZ.ay)>50) | (abs(pZ.az)>50) | ((pZ.gx**2 + pZ.gy**2 + pZ.gz**2)**0.5 < 9.75) | ((pZ.gx**2 + pZ.gy**2 + pZ.gz**2)**0.5 > 9.85)
     return pZ
     
 def processZquatA(pZ):  # the sensor from the phone
