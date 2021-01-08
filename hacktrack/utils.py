@@ -108,6 +108,32 @@ def qmult(quat0, quat1):
             -x1*z0 + y1*w0 + z1*x0 + w1*y0,
              x1*y0 - y1*x0 + z1*w0 + w1*z0)
 
+#Calculates the angle between two vectors
+def vecAng(v1,v2):
+    dotProduct = numpy.dot(v1,v2)
+    mods = (sum(i**2 for i in v1)**0.5) * (sum(i**2 for i in v2)**0.5)
+    angle = math.acos(dotProduct/mods)
+    return angle
+
+#Calculates the angle between two series of vectors
+def vecAngSeries(vSeries1,vSeries2):
+    vAng =[]
+    for i in range(len(vSeries1[0])):
+                   v1 = (vSeries1[0][i],vSeries1[1][i],vSeries1[2][i])
+                   v2 = (vSeries2[0][i],vSeries2[1][i],vSeries2[2][i])
+                   vAng.append(vecAng(v1,v2))            
+    return pandas.Series(vAng, index = vSeries1[0].index)
+
+#Calculates the moduli of a series of vectors
+def vecModSeries(vSeries):
+    vMod =[]
+    for i in range(len(vSeries[0])):
+                   v = (vSeries[0][i],vSeries[1][i],vSeries[2][i])
+                   mod = (sum(i**2 for i in v)**0.5)
+                   vMod.append(mod)            
+    return pandas.Series(vMod, index = vSeries[0].index)
+
+
 # this turns out to be the Savitzky-Golay filter
 sec1 = pandas.Timedelta(seconds=1)
 def curvefitdifferentiate(rx, ws, deg=3):
