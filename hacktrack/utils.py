@@ -136,14 +136,16 @@ def vecModSeries(vSeries):
 
 # this turns out to be the Savitzky-Golay filter
 sec1 = pandas.Timedelta(seconds=1)
-def curvefitdifferentiate(rx, ws, deg=3):
-    rx0 = rx.copy()
-    rx1 = rx.copy()
-    rx2 = rx.copy()
+def intercurvefitdifferentiate(seriestimeindex, rx, ws, deg=3):
+    rx0 = pandas.Series(0, seriestimeindex)
+    rx1 = pandas.Series(0, seriestimeindex)
+    rx2 = pandas.Series(0, seriestimeindex)
     wt = ws*sec1
-    for n in range(len(rx)):
-        t = rx.index[n]
+    for n in range(len(seriestimeindex)):
+        t = seriestimeindex[n]
         lx = rx[t-wt:t+wt]
+        if len(lx) == 0:
+            continue
         ts = (lx.index - t)/sec1
         weights = 1/((abs(ts)/ws)**2+1)
         pm = numpy.polyfit(ts, lx, deg=deg, w=weights)
@@ -153,6 +155,9 @@ def curvefitdifferentiate(rx, ws, deg=3):
         pm2 = numpy.polyder(pm, 2)
         rx2.iloc[n] = numpy.polyval(pm2, 0)
     return rx0, rx1, rx2
+
+def curvefitdifferentiate(rx, ws, deg=3):
+    return intercurvefitdifferentiate(rx.index, rx, ws, deg=3)
 
     
 def FiltFiltButter(s, f=0.004, n=3):
