@@ -159,6 +159,25 @@ def intercurvefitdifferentiate(seriestimeindex, rx, ws, deg=3):
 def curvefitdifferentiate(rx, ws, deg=3):
     return intercurvefitdifferentiate(rx.index, rx, ws, deg=3)
 
+sec1 = pandas.Timedelta(seconds=1)
+def angularspeedsquaredfromvector(px, py, pz, ws):
+    as2 = pandas.Series(0, px.index)
+    wt = ws*sec1
+    for n in range(len(as2)):
+        t = as2.index[n]
+        lpx = px[t-wt:t+wt]
+        if len(lpx) == 0:
+            continue
+        ts = (lpx.index - t)/sec1
+        weights = 1/((abs(ts)/ws)**2+1)
+        lpy = py[t-wt:t+wt]
+        lpz = pz[t-wt:t+wt]
+        pmx = numpy.polyfit(ts, lpx, deg=1, w=weights)
+        pmy = numpy.polyfit(ts, lpy, deg=1, w=weights)
+        pmz = numpy.polyfit(ts, lpz, deg=1, w=weights)
+        as2.iloc[n] = pmx[0]**2 + pmy[0]**2 + pmz[0]**2 
+    return as2
+
     
 def FiltFiltButter(s, f=0.004, n=3):
     "Butterworth bidirectional filter on series signal"
