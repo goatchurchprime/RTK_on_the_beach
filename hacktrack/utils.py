@@ -133,6 +133,29 @@ def vecModSeries(vSeries):
                    vMod.append(mod)            
     return pandas.Series(vMod, index = vSeries[0].index)
 
+#function to return the x and y angles of a vector series
+def vecAtanSeries(series):
+    theta_x =[]
+    theta_y =[]
+    theta_z =[] #Angle of resolved x and y components
+    for i in range(len(series[0])):
+        theta_x.append(math.atan(series[0][i]/series[2][i]))
+        theta_y.append(math.atan(series[1][i]/series[2][i]))
+        theta_z.append(math.atan((series[0][i]**2 + series[1][i]**2)**0.5/series[2][i]))
+    return pandas.Series(theta_x, index=series[0].index), pandas.Series(theta_y, index=series[0].index), pandas.Series(theta_z, index=series[0].index)
+
+def sinSeries(series):
+    out=[]
+    for angle in series:
+        out.append(math.sin(angle))
+    return pandas.Series(out, index = series.index)
+
+def cosSeries(series):
+    out=[]
+    for angle in series:
+        out.append(math.cos(angle))
+    return pandas.Series(out, index = series.index)
+
 
 # this turns out to be the Savitzky-Golay filter
 sec1 = pandas.Timedelta(seconds=1)
