@@ -102,7 +102,7 @@ def linfuncB(line):
     c = int(line[18:22], 16)
     return (t, p, c*0.01)
 
-def linfuncX(line):
+def DlinfuncX(line):
     t = int(line[2:10], 16)
     dp8 = int(line[11:19], 16)
     dp = dp8*(3/2)/8   # missing factor and 8 fold sum
@@ -112,6 +112,12 @@ def linfuncX(line):
         # if the wind duration extends back by more than the sample rate, then we can fill the average value into that spot too by backdating it and over-writing its zero
     return (t, (dp/(0x3FFF*0.4) - 1.25)*6894.75728, c*(200.0/0x7FF) - 50, (80000*wn/wr if wr != 0 else 0))
 
+def linfuncX(line):
+    t = int(line[2:10], 16)
+    dp = int(line[11:15], 16)
+    c = int(line[16:20], 16)
+    return (t, (dp/(0x3FFF*0.4) - 1.25)*6894.75728, c*(200.0/0x7FF) - 50)
+    
 def linfuncL(lin):
     t = int(lin[2:10], 16)
     l = int(lin[11:17], 16)
@@ -255,7 +261,7 @@ recargsB = ('B', linfuncB, ["Prb", "tB"])
 recargsL = ('L', linfuncL, ["Lg"]) 
 recargsU = ('U', linfuncU, ["Dust"]) 
 recargsQ = ('Q', linfuncQ, ["u", "lng", "lat", "alt", "devno"]) 
-recargsX = ('X', linfuncX, ["Dmb", "tX", "wms"]) 
+recargsX = ('X', linfuncX, ["Dmb", "tX"]) 
 recargsN = ('N', linfuncN, ["sN"])   # nickel wire
 recargsAF = ('aF', linfuncAF, ["Pr"])
 recargsAZ = ('aZ', linfuncAZ, ["q1", "q2", "q3"])
