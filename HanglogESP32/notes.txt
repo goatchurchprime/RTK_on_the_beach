@@ -1,0 +1,8 @@
+Many of these modules have been copied over from https://github.com/Future-Hangglider/HanglogESP32
+to keep them more in one repo to make 
+
+* soperunit
+This operates and streams to the Hanglog3 Android App:
+> BNO055 orientation sensor
+
+> PX4Airspeed pitot based on: https://uk.farnell.com/sensor-solutions-te-connectivity/4525do-ds5ai001dp/pressure-sensor-i2c-30inch-h2o/dp/2771946?st=4525d
