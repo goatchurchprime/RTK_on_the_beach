@@ -244,7 +244,7 @@ def linfuncAU(lin):
 
 def linfuncAA(lin):
     t = int(lin[3:11], 16)
-    ax, ay, az = s16(line[12:16])/32768, s16(line[17:21])/32768, s16(line[22:26])/32768
+    ax, ay, az = s16(lin[12:16])/32768, s16(lin[17:21])/32768, s16(lin[22:26])/32768
     return (t, ax, ay, az)
 
 recargsE = ('E', linfuncE, ["m", "d"])
