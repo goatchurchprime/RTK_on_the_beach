@@ -86,9 +86,15 @@ if __name__ == "__main__":
     client = makeinfluxdbclient()
     while True:
         fdirs = os.listdir("hanglog")
+
+        k = client.query("SELECT * FROM hanglog_index")
+        pK = pandas.DataFrame(k.get_points())
+        pK = pK.drop(columns=["logchannel", "time"], errors="ignore")
+
         print("\n\nhanglog directories:")
-        for i, fd in enumerate(fdirs):
-            print(" ", i, fd)
+        for i, fdir in enumerate(fdirs):
+            alreadyuploaded = (pK.fdir==fdir).any()
+            print(" ", i, fdir, "[uploaded]" if alreadyuploaded else "")
         print()
         choice = input("Choose directory: ")
         if choice == "":

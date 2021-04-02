@@ -4,7 +4,7 @@ import socket, time, os
 # Script for connecting to Hanglog3 on the android device and 
 # listing, downloading or erasing directories of logged data
 #
-# Simply execute when connected to the androind device, since it 
+# Simply execute when connected to the android device, since it 
 # has it's own Command Line User Interface
 #
 
