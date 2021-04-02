@@ -405,8 +405,10 @@ class FlyDat:
         linAdiffcount = 0
         try:
             for lin in self.fin:
+                if lin[:3] == "End":
+                    print("End found", lin)
                 #Rt[ms]d"[isodate]"e[latdE]n[latdN]f[lngdE]o[lngdN] GPS cooeffs
-                if lin[0] == "R":  # R-type was the intro to first GPS record setting the origin
+                elif lin[0] == "R":  # R-type was the intro to first GPS record setting the origin
                     print("undebugged R record", lin)
                     rms = int(lin[2:10], 16)
                     rdd = pandas.to_datetime(lin[12:35])
