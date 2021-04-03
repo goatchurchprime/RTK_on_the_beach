@@ -376,7 +376,7 @@ class FlyDat:
             self.pIGCs.append(self.pIGC)
             return
             
-        # initiating with IGC type
+        # initiating with RTK type
         if self.fname[-4:].lower() == ".pos":
             pPOS = GLoadRTKpos(fname)
             self.timestampmidnight = pandas.Timestamp(pPOS.index[0].date())
@@ -455,7 +455,7 @@ class FlyDat:
             self.Rdatetime0byinterleave = self.aRdatetime0 + pandas.Timedelta(milliseconds=linAdiffsum/linAdiffcount)
         
         if lc is not None and lc:
-            nloaded = self.LoadA(lc)
+            nloaded = self.LoadC(lc)
                 
         if self.t0 is None:
             if self.Rdatetime0byinterleave is not None:
@@ -463,7 +463,7 @@ class FlyDat:
                 print("Missing GPS data, so setting t0 to", self.Rdatetime0byinterleave)
             else:
                 self.t0 = pandas.Timestamp("2000-01-01")
-                print("No absolute time found", self.t0)
+                #print("No absolute time found", self.t0)
             
 
     def LoadLType(self, c, linfunc, columns):
@@ -482,7 +482,9 @@ class FlyDat:
                     try:
                         k[i] = linfunc(lin)
                         i += 1
-                    except ValueError:
+                    except ValueError as e:
+                        print("what's bad???", e)
+                        print([lin, linfunc])
                         badvalues.append((i, lin))
         else: # (above is to make it faster in single character case; this is a[QVF] case)
             for lin in self.fin:
@@ -495,7 +497,7 @@ class FlyDat:
                     
         if badvalues:
             print("BAD VALUES", len(badvalues), badvalues[:3])
-        print("Made for", c, self.reccounts[c], "last index", i)
+        print("Parsed", c, self.reccounts[c], "last index", i)
         if not columns:
             return k
         if c[0] == "a":
@@ -539,11 +541,14 @@ class FlyDat:
                 continue
 
             Lc, linfunc, columns = recargsDict["a"+c  if prevandroid else c]
+            if self.reccounts.get(Lc, 0) == 0:
+                continue
+
             pC = self.LoadLType(Lc, linfunc, columns)
             
             # reset the pQ type to use true GPS times in the u parameter, and improve the microcontroller timestamps offset
             if pC.size != 0:
-                print("pCattrname", pCattrname)
+                #print("pCattrname", pCattrname)
                 if pCattrname == 'aQ':
                     pC = processQaddrelEN(pC, self)
                     aQ = pC

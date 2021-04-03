@@ -90,10 +90,9 @@ if __name__ == "__main__":
         k = client.query("SELECT * FROM hanglog_index")
         pK = pandas.DataFrame(k.get_points())
         pK = pK.drop(columns=["logchannel", "time"], errors="ignore")
-
         print("\n\nhanglog directories:")
         for i, fdir in enumerate(fdirs):
-            alreadyuploaded = (pK.fdir==fdir).any()
+            alreadyuploaded = (len(pK) != 0) and (pK.fdir==fdir).any()
             print(" ", i, fdir, "[uploaded]" if alreadyuploaded else "")
         print()
         choice = input("Choose directory: ")
@@ -119,7 +118,7 @@ if __name__ == "__main__":
 
             tags["devicename"] = devicename
             tags["uploaddate"] = datetime.datetime.now().isoformat()[:10]
-            index_fields = { "ft0":fd.ft0.isoformat(), "ft0":fd.ft0.isoformat(), "rectypespresent":" ".join(rectypespresent) }
+            index_fields = { "ft0":fd.ft0.isoformat(), "ft1":fd.ft1.isoformat(), "rectypespresent":" ".join(rectypespresent) }
             print("indexrecord ", index_fields)
             record = { "measurement":"hanglog_index", "tags":tags, "time":fd.ft0.isoformat(), "fields":index_fields }
             client.write_points([record])
