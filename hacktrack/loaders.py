@@ -206,10 +206,15 @@ def processQaddrelEN(pQ, fd=None):
 def linfuncW(lin):  
     t = int(lin[2:10], 16)
     w = int(lin[11:15], 16)
-    n = int(lin[16:24], 16)
-    if w == 0xFFFF:
-        raise ValueError()
+    n = int(lin[16:20], 16)
     return t, w, n
+
+def linfuncM(lin):
+    t = int(lin[2:10], 16)
+    tM = s16(lin[11:15])*100.0/0x8000
+    hM = s16(lin[16:20])*100.0/0x8000
+    bM = int(lin[21:27], 16)/100.0
+    return t, tM, hM, bM
     
 def linfuncAF(lin):
     t = int(lin[3:11], 16)
@@ -249,6 +254,7 @@ def linfuncAA(lin):
 
 recargsE = ('E', linfuncE, ["m", "d"])
 recargsW = ('W', linfuncW, ["w", "n"]) 
+recargsM = ('M', linfuncM, ["tM", "hM", "bM"]) 
 recargsR = ('R', linfuncR, ["epoch", "e", "n", "f", "o", "devno"]) 
 recargsF = ('F', linfuncF, ["Pr"]) 
 recargsZ = ('Z', linfuncZ, ["ax", "ay", "az", "gx", "gy", "gz", "q0", "q1", "q2", "q3", "s", "mx", "my", "mz"]) 
