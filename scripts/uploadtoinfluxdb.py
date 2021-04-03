@@ -43,7 +43,7 @@ def uploadfd(fd, measurement, tags, rectypespresent):
     for k in rectypespresent:
         fieldkeys = None
         precs = None
-        if k in "UZSXYQVGFW":
+        if k in "MUZSXYQVGFW":
             fieldkeys = hacktrack.loaders.__getattribute__("recargs"+k)[2]
             precs = fd.__getattribute__("p"+k)
             measurement = "p"+k
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             if os.path.splitext(ffile)[1] != ".log":
                 continue
             fLog = os.path.join("hanglog", fdir, ffile)
-            fd = hacktrack.loaders.FlyDat(fLog, lc='FLQRVWYZUISGNBXaFaZaQaV')
+            fd = hacktrack.loaders.FlyDat(fLog, lc='MFLQRVWYZUISGNBXaFaZaQaV')
             
             devicename = options.devicename
             while not devicename:
