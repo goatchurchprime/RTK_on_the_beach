@@ -1,4 +1,4 @@
-from machine import UART, Pin
+from machine import UART, Pin, ADC
 import time, socket, urandom
 from BNO055_class import BNO055
 from UDPblackviewphone import connectActivePhone
@@ -32,10 +32,23 @@ if p27 is not None:
     ulp.set_wakeup_period(0, 1000000)
     ulp.run(entry*4)
     countpin27 = 0
+    fanbladedivider = int(fconfig.get("fanbladedivider", 15))
+    mem32[0x50000000+3*4] = fanbladedivider&0xFFFF
     def readulpdata(r):
         return mem32[0x50000000+r]&0xFFFF
+    print("fanbladedivider", readulpdata(3*4))
     wbs = bytearray("Wt00000000w0000n0000\n")
     mwbs = memoryview(wbs)
+
+nbs = None
+if "analogreadpin" in fconfig:
+    pinanalogread = ADC(Pin(int(fconfig["analogreadpin"]), Pin.IN))
+    pinanalogread.atten(ADC.ATTN_11DB)
+    pinanalogread.width(ADC.WIDTH_12BIT)
+    nbs = bytearray("Nt00000000s000000\n")
+    mnbs = memoryview(nbs)
+    analogreadrate = int(fconfig.get("analogreadrate", 1000))
+    tstampanalogread = 0
 
 deviceletter = fconfig["deviceletter"]
 c = fconfig["connection0"].split(",")
@@ -58,12 +71,12 @@ nextledonstamp = 0
 ubs = bytearray("Ut00000000i00\n")
 mubs = memoryview(ubs)
 
-    
 while True:
     try:
+        print("making socket")
         ss = socket.socket()
         ss.settimeout(1)
-        print(ss)
+        print("socket is", ss)
         ss.connect(socket.getaddrinfo(androidipnumber, portnumber)[0][-1])
         s = ss.makefile('rwb', 0)
         print(s.readline())
@@ -99,7 +112,19 @@ while True:
                     mwbs[11:15] = b"%04X" % timepin27
                     mwbs[16:20] = b"%04X" % countpin27
                     dwrite(wbs)
+
+            if nbs != 0 and tstamp > tstampanalogread:
+                tstampanalogread = tstamp + analogreadrate
+                mnbs[2:10] = b"%08X" % tstamp
+                mnbs[11:17] = b"%06X" % pinanalogread.read()
+                dwrite(nbs)
                 
+                    
     except OSError as e:
-        print("OSError", e)
+        msg = str(e)
+        if e.args[0] == 118:
+            msg = "wifi not connected"
+        elif e.args[0] == 23:
+            msg = "socket error"
+        print("OSError", msg)
         time.sleep(2)

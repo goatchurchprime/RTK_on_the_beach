@@ -70,7 +70,6 @@ else:
     print("BME280 not found")
 
     
-    
 def readi2cdevices(tstamp):
     global tstamppx4, tstampsht31, tstampbme280
     if xbs != None:
@@ -91,32 +90,30 @@ def readi2cdevices(tstamp):
             tstamppx4 = 0
             i2c.writeto(0x28, b"")
 
-    if sbs != None:
-        if tstamp > tstampsht31:
-            tstampsht31 = tstamp + sht31readrate
-            i2c.writeto(0x44, b'\xE0\x00')
-            k = i2c.readfrom(0x44, 6)
-            if k[2] == crc8(k[0], k[1]) and k[5] == crc8(k[3], k[4]):
-                rawtemp = (k[0]<<8) | k[1]
-                rawhumid = (k[3]<<8) | k[4]
-                msbs[2:10] = b"%08X" % tstamp
-                msbs[11:15] = b"%04X" % rawhumid
-                msbs[16:20] = b"%04X" % rawtemp
+    if sbs != None and tstamp > tstampsht31:
+        tstampsht31 = tstamp + sht31readrate
+        i2c.writeto(0x44, b'\xE0\x00')
+        k = i2c.readfrom(0x44, 6)
+        if k[2] == crc8(k[0], k[1]) and k[5] == crc8(k[3], k[4]):
+            rawtemp = (k[0]<<8) | k[1]
+            rawhumid = (k[3]<<8) | k[4]
+            msbs[2:10] = b"%08X" % tstamp
+            msbs[11:15] = b"%04X" % rawhumid
+            msbs[16:20] = b"%04X" % rawtemp
 
-                stemp = (rawtemp * 175)/0xFFFF - 45
-                shumid = (rawhumid*100)/0xFFFF
-                print(stemp, shumid)
-                return sbs
+            stemp = (rawtemp * 175)/0xFFFF - 45
+            shumid = (rawhumid*100)/0xFFFF
+            print(stemp, shumid)
+            return sbs
 
-    if mbs != None:
-        if tstamp > tstampbme280:
-            tstampbme280 = tstamp + bme280readrate
-            temp, baro, humid = next(bme280iter)
-            mmbs[2:10] = b"%08X" % tstamp
-            mmbs[11:15] = b"%04X" % (int(temp/100*0x8000)&0xFFFF)
-            mmbs[16:20] = b"%04X" % (int(humid/100*0x8000)&0xFFFF)
-            mmbs[21:27] = b"%06X" % (int(baro*100)&0xFFFFFF)
-            return mbs
+    if mbs != None and tstamp > tstampbme280:
+        tstampbme280 = tstamp + bme280readrate
+        temp, baro, humid = next(bme280iter)
+        mmbs[2:10] = b"%08X" % tstamp
+        mmbs[11:15] = b"%04X" % (int(temp/100*0x8000)&0xFFFF)
+        mmbs[16:20] = b"%04X" % (int(humid/100*0x8000)&0xFFFF)
+        mmbs[21:27] = b"%06X" % (int(baro*100)&0xFFFFFF)
+        return mbs
             
     return None
 
