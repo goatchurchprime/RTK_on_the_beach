@@ -11,20 +11,20 @@ The Hanglog3 app displays the incoming connections in a table.  Green is a good 
 0. You have collected some data by running the ESP32s near a phone with its android hotspot 
 enabled while running the Hanglog3 app and recorded a stream of data using the GoLog switch.
 
-1. Connect PC to phone's android hotspot while the phone is running Hanglog3.  Then run:
-> python scripts/fetchhanglogfiles.py hanglog
+1. Connect PC to phone's android hotspot while the phone is running Hanglog3, enter the scripts directory, then run:
+> python fetchhanglogfiles.py hanglog
 This creates a directory named after the datetime
 
 2. Connect ESP32 base station ('C' with SD card) to Hanglog3 and run:
-> python scripts/fetchsdcardfiles.py hanglog/dd_2020_07_26_161026/
+> python fetchsdcardfiles.py hanglog/dd_2020_07_26_161026/
 This lets you select and download the correct file to this directory
+**You now need to move the file from hanglog into the right subdirectory**
 
 3. Check all three files are present:
 > ls -l hanglog/dd_2020_07_26_161026/
 
 4. Perform the RTK on this:
-> python scripts/ubxpostfiles.py -bC hanglog/dd_2020_07_26_161026/
-
+> python ubxpostfiles.py -bC hanglog/dd_2020_07_26_161026/
 
 
 #### Acquiring the data into the Android device

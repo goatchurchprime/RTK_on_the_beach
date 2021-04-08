@@ -4,7 +4,7 @@
 # Needs to be on phone hotspot to which the GPS with SD card is connected
 #
 
-import socket, time
+import socket, time, os
 
 hanglogaddr = socket.getaddrinfo("192.168.43.1", 9042)[0][-1]
 print("Script to download files from Android device through Hanglog3")
@@ -76,6 +76,7 @@ def hanglog3downloadDevice(hfile, deviceletter, hfileout):
     fout.close()
     ss.close()
     ssR.close()
+    print("saved as", hfileout)
 
 
 def hanglog3eraseDevice(hfile, deviceletter):
@@ -118,7 +119,11 @@ if __name__ == "__main__":
             print()
             choiced = input("Download, erase or go up [d/e/u]: ")
             if choiced == "d":
-                hanglog3downloadDevice("sd/%s"%ffile, deviceletter, ffile)
+                if not os.path.exists("hanglog"):
+                    print("Making hanglog directory")
+                    os.mkdir("hanglog")
+                hanglog3downloadDevice("sd/%s"%ffile, deviceletter, os.path.join("hanglog", ffile))
+                break
             elif choiced == "e":
                 hanglog3eraseDevice("sd/%s"%ffile, deviceletter)
                 break

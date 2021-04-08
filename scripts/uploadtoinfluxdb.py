@@ -17,6 +17,7 @@ parser.add_option("-d", "--devicename", dest="devicename",
 sys.path.append("..")
 import hacktrack.loaders
 import pandas, numpy, math
+import ubxpostutils
 
 import influxdb
 def makeinfluxdbclient():
@@ -47,7 +48,7 @@ def uploadfd(fd, measurement, tags, rectypespresent):
             fieldkeys = hacktrack.loaders.__getattribute__("recargs"+k)[2]
             precs = fd.__getattribute__("p"+k)
             measurement = "p"+k
-        elif k[0] == "a" and k[1] in "ZQFV":
+        elif k[0] == "a" and k[1] in "AZQFV":
             fieldkeys = hacktrack.loaders.__getattribute__("recargsA"+k[1])[2]
             precs = fd.__getattribute__(k)
             measurement = k
@@ -98,32 +99,66 @@ if __name__ == "__main__":
         choice = input("Choose directory: ")
         if choice == "":
             break
+
         fdir = fdirs[int(choice)]
         ffiles = os.listdir(os.path.join("hanglog", fdir))
-        print("\n\n files:")
-        print("\n".join(ffiles))
-        for ffile in ffiles:
-            if os.path.splitext(ffile)[1] != ".log":
-                continue
-            fLog = os.path.join("hanglog", fdir, ffile)
-            fd = hacktrack.loaders.FlyDat(fLog, lc='NMFLQRVWYZUISGNBXaFaZaQaV')
-            
-            devicename = options.devicename
-            while not devicename:
-                devicename = input("Device name: ")
-                
-            tags = { "fname":ffile, "fdir":fdir }
-            rectypespresent = [k for k in fd.reccounts  if fd.reccounts[k] != 0]
-            uploadfd(fd, "hanglog", tags, rectypespresent)
+        devicename = options.devicename
+        while not devicename:
+            devicename = input("Device name: ")
 
+        for ffile in ffiles:
+            froot, fext = os.path.splitext(ffile)
+            if fext == ".log":
+                fLog = os.path.join("hanglog", fdir, ffile)
+                fd = hacktrack.loaders.FlyDat(fLog, lc='NMFLQRVWYZUISGNBXaFaZaQaVaA')
+                
+                tags = { "fname":ffile, "fdir":fdir }
+                rectypespresent = [k for k in fd.reccounts  if fd.reccounts[k] != 0]
+                uploadfd(fd, "hanglog", tags, rectypespresent)
+
+                tags = { "fname":ffile, "fdir":fdir }
+                tags["devicename"] = devicename
+                tags["uploaddate"] = datetime.datetime.now().isoformat()[:10]
+                index_fields = { "ft0":fd.ft0.isoformat(), "ft1":fd.ft1.isoformat(), "rectypespresent":" ".join(rectypespresent) }
+                print("indexrecord ", index_fields)
+                record = { "measurement":"hanglog_index", "tags":tags, "time":fd.ft0.isoformat(), "fields":index_fields }
+                client.write_points([record])
+                
+        rtkchannels = [ ]
+        rtkmintime, rtkmaxtime = None, None
+        for ffile in ffiles:
+            froot, fext = os.path.splitext(ffile)
+            if fext == ".pos" and not froot.endswith("_events"):
+                fpos = os.path.join("hanglog", fdir, ffile)
+                w = ubxpostutils.readposfile(fpos)
+                for c in w.columns:
+                    if (c[:2] == "sd" and c[-3:] == "(m)") or c[-3:] == "(s)":
+                        del w[c]
+                channel = froot[-1:] if froot[-1:] in "ABC" else froot[-5:]
+                rtkchannels.append(channel)
+
+                records = [ ]
+                for idx, row in w.iterrows():
+                    tags = { "fname":ffile, "fdir":fdir, "channel":channel }
+                    record = { "measurement":"rtkgps", "tags":tags, "time":idx.isoformat(), "fields":dict(row) }
+                    records.append(record)
+                    if rtkmintime is None or idx < rtkmintime:
+                        rtkmintime = idx
+                    if rtkmaxtime is None or idx > rtkmaxtime:
+                        rtkmaxtime = idx
+
+                print("writing %d records to channel %s" % (len(records), channel))
+                client.write_points(records)  
+                
+        if rtkchannels:
+            tags = { "fname":ffile, "fdir":fdir }
             tags["devicename"] = devicename
             tags["uploaddate"] = datetime.datetime.now().isoformat()[:10]
-            index_fields = { "ft0":fd.ft0.isoformat(), "ft1":fd.ft1.isoformat(), "rectypespresent":" ".join(rectypespresent) }
+            index_fields = { "ft0":rtkmintime.isoformat(), "ft1":rtkmaxtime.isoformat(), "rtkchannels":" ".join(rtkchannels) }
             print("indexrecord ", index_fields)
-            record = { "measurement":"hanglog_index", "tags":tags, "time":fd.ft0.isoformat(), "fields":index_fields }
+            record = { "measurement":"hanglogrtk_index", "tags":tags, "time":rtkmintime.isoformat(), "fields":index_fields }
             client.write_points([record])
-            
-            
+
         print()
 
         if choice == "":

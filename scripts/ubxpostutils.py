@@ -43,3 +43,15 @@ def readposfile(fpos, lat0=None, lng0=None):
     w.set_index("time", inplace=True)
     w.index.name = None
     return w
+    
+def posextents(w):
+    if "x" in w.columns:
+        return w.x.max()-w.x.min(), w.y.max()-w.y.min()
+    lat0, lng0 = w.iloc[0].lat, w.iloc[0].lng
+    earthrad = 6378137
+    latfac = 2*math.pi*earthrad/360
+    lngfac = latfac*math.cos(math.radians(lat0))
+    wy = (w.lat - lat0)*latfac
+    wx = (w.lng - lng0)*lngfac
+    return wx.max()-wx.min(), wy.max()-wy.min()
+    

@@ -1,6 +1,6 @@
 
-import argparse, os, subprocess
-from ubxpostutils import genconfig, readposfile
+import argparse, os, subprocess, shutil
+from ubxpostutils import genconfig, readposfile, posextents
 
 # 
 # Use this code for post-processing the UBX files either individually or as RTK
@@ -50,23 +50,39 @@ def makertkconfig(basepos=None):
               #stats-prnaccelh    =10.0       # (m/s^2)
               #stats-prnaccelv    =10.0       # (m/s^2)
         
-def processrtktopos(fbaseL, fbaseC=None, basepos=None):
+def processtopos(fbaseL):
+    fposL = fbaseL+".pos"
+    fobsL = fbaseL+".obs"
+    fnavL = fbaseL+".nav"
+    fconfig = genconfig(fdir, makertkconfig(None))
+    if os.path.exists(fobsL):
+        print("\nprocessing", fposL)
+        popenargs = [ rnx2rtkpexe, "-k", fconfig, "-o", fposL, fobsL ]
+        popenargs.append(fnavL)
+        k = subprocess.run(popenargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if k.stderr:
+            print("stderr:", k.stderr.decode())
+        if k.stdout:
+            print("stdout:", k.stdout.decode())
+
+
+def processrtktopos(fbaseL, fbaseC, basepos):
     fposL = fbaseL+".pos"
     fobsL = fbaseL+".obs"
     fnavL = fbaseL+".nav"
     fconfig = genconfig(fdir, makertkconfig(basepos))
     if os.path.exists(fobsL):
-        print("\nprocessing", fposL, "against", fbaseC)
+        print("\nrtk-processing", fposL, "against", fbaseC)
         popenargs = [ rnx2rtkpexe, "-k", fconfig, "-o", fposL, fobsL ]
-        if fbaseC is None:
-            popenargs.append(fnavL)
-        else:
-            fbaseCobs = fbaseC+".obs"
-            fbaseCnav = fbaseC+".nav"
-            popenargs.extend([fbaseCobs, fbaseCnav])
+        fbaseCobs = fbaseC+".obs"
+        fbaseCnav = fbaseC+".nav"
+        popenargs.extend([fbaseCobs, fbaseCnav])
         k = subprocess.run(popenargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(k.stderr.decode())
         print(k.stdout.decode())
+    else:
+        print("File:", fobsL, "missing!!!")
+
 
 
 # Find the files in the directory
@@ -78,12 +94,18 @@ fubxfiles = dict((froot[-1], os.path.join(fdir, froot))  \
                  for froot in (os.path.splitext(f)[0]  for f in os.listdir(fdir)  if f[-4:] == '.ubx'))
 for L in fubxfiles:
     runconvbin(fubxfiles[L], args.force)
+    processtopos(fubxfiles[L])
+    w = readposfile(fubxfiles[L]+".pos")
+    print("    Start time:", w.index[0], "End:", w.index[-1], "Duration:", w.index[-1]-w.index[0])
+    print("    Satellites avg:", w.ns.mean(), "Max:", w.ns.max())
+    print("    X-extent(m): %f  Y-extent(m): %f" % posextents(w))
+    
+    
 
 # Process the basestation GPS unit   
 if args.base in fubxfiles:
-    print("Extracting average point for base station")
+    print("\n\nExtracting average point for base station")
     fbaseC = fubxfiles[args.base]
-    processrtktopos(fbaseC)
     w = readposfile(fbaseC+".pos")
     baselat, baselng, basealt = w.lat.mean(), w.lng.mean(), w.alt.mean()
     baselatstd, baselngstd, basealtstd = w.lat.std(), w.lng.std(), w.alt.std()
@@ -107,5 +129,17 @@ else:
 for L in fubxfiles:
     if L != args.base:
         fbaseL = fubxfiles[L]
+        shutil.move(fbaseL+".pos", fbaseL+".pos.bak")
         processrtktopos(fbaseL, fbaseC, basepos)
+        if os.path.exists(fbaseL+".pos"):
+            frtk = fbaseL+"_rtk.pos"
+            shutil.move(fbaseL+".pos", frtk)
+            w = readposfile(frtk)
+            print("RTK pos file", frtk)
+            print("    Start time:", w.index[0], "End:", w.index[-1], "Duration:", w.index[-1]-w.index[0])
+            print("    Satellites avg:", w.ns.mean(), "Max:", w.ns.max())
+            print("    X-extent(m): %f  Y-extent(m): %f" % posextents(w))
 
+        else:
+            print("rtk.pos file not made")
+        shutil.move(fbaseL+".pos.bak", fbaseL+".pos")
