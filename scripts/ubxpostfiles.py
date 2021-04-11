@@ -1,5 +1,5 @@
 
-import argparse, os, subprocess, shutil
+import argparse, os, subprocess, shutil, sys
 from ubxpostutils import genconfig, readposfile, posextents
 
 # 
@@ -11,8 +11,12 @@ parser.add_argument('-b','--base', help='Base station [C]', default='C')
 parser.add_argument('-f','--force', help='Rerun conversions', default=False, action="store_true")
 parser.add_argument("fdir")
 
-convbinexe = "/home/julian/extrepositories/RTKLIB-rtkexplorer/app/convbin/gcc/convbin"
-rnx2rtkpexe = "/home/julian/extrepositories/RTKLIB-rtkexplorer/app/rnx2rtkp/gcc/rnx2rtkp"
+#convbinexe = "/home/julian/extrepositories/RTKLIB-rtkexplorer/app/convbin/gcc/convbin"
+#rnx2rtkpexe = "/home/julian/extrepositories/RTKLIB-rtkexplorer/app/rnx2rtkp/gcc/rnx2rtkp"
+
+convbinexe = "/home/julian/extrepositories/RTKLIB_2.4.3_b34/bin/convbin.exe"
+rnx2rtkpexe = "/home/julian/extrepositories/RTKLIB_2.4.3_b34/bin/rnx2rtkp.exe"
+
 
 # Copy the .ubx files across from the phone(s) to a directory 
 # and process into .pos files
@@ -22,8 +26,11 @@ def runconvbin(froot, bforce):
     fubx = froot + ".ubx"
     fobs = froot + ".obs"
     if bforce or not os.path.exists(fobs):
-        print("\nconvbin on", fubx)
-        k = subprocess.run([convbinexe, fubx], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        rlist = [convbinexe, fubx.replace("/", "\\")]
+        if sys.platform == "linux":
+            rlist.insert(0, "wine")
+        print("\nconvbin on", rlist)
+        k = subprocess.run(rlist, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(k.stderr.decode())
         print(k.stdout.decode())
         if not os.path.exists(fobs):
@@ -57,8 +64,11 @@ def processtopos(fbaseL):
     fconfig = genconfig(fdir, makertkconfig(None))
     if os.path.exists(fobsL):
         print("\nprocessing", fposL)
-        popenargs = [ rnx2rtkpexe, "-k", fconfig, "-o", fposL, fobsL ]
-        popenargs.append(fnavL)
+        popenargs = [ rnx2rtkpexe, "-k", fconfig.replace("/", "\\"), "-o", fposL.replace("/", "\\"), fobsL.replace("/", "\\") ]
+        popenargs.append(fnavL.replace("/", "\\"))
+        if sys.platform == "linux":
+            popenargs.insert(0, "wine")
+        print(" ".join(popenargs))
         k = subprocess.run(popenargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if k.stderr:
             print("stderr:", k.stderr.decode())
@@ -73,10 +83,13 @@ def processrtktopos(fbaseL, fbaseC, basepos):
     fconfig = genconfig(fdir, makertkconfig(basepos))
     if os.path.exists(fobsL):
         print("\nrtk-processing", fposL, "against", fbaseC)
-        popenargs = [ rnx2rtkpexe, "-k", fconfig, "-o", fposL, fobsL ]
+        popenargs = [ rnx2rtkpexe, "-k", fconfig.replace("/", "\\"), "-o", fposL.replace("/", "\\"), fobsL.replace("/", "\\") ]
         fbaseCobs = fbaseC+".obs"
         fbaseCnav = fbaseC+".nav"
-        popenargs.extend([fbaseCobs, fbaseCnav])
+        popenargs.extend([fbaseCobs.replace("/", "\\"), fbaseCnav.replace("/", "\\")])
+        if sys.platform == "linux":
+            popenargs.insert(0, "wine")
+        print(" ".join(popenargs))
         k = subprocess.run(popenargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(k.stderr.decode())
         print(k.stdout.decode())

@@ -59,7 +59,9 @@ The '-b' option tells which is the base station.  The default is 'C'.
 
 > python scripts/ubxpostfiles.py -bA hanglog/20200602092356/
 
-(Should make an xy plot preview of the pos files)
+**This script requires you to have a copy of https://github.com/tomojitakasu/RTKLIB/releases and set the paths to the convbin.exe and rnx2rtkp.exe at the top**
+
+
 
 This interface can be driven from Python scripts or from RTKnavi which can be configured to send these special strings on connection and which is designed to process raw streams of Ublox GPS data. 
 
