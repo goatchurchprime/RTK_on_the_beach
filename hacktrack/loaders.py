@@ -76,6 +76,7 @@ def TimeFlightStartEndV(pV):
 def linfuncN(line):
     t = int(line[2:10], 16)
     s = int(line[11:17], 16)
+    r = int(line[18:24], 16)
     return (t, s)
 
 def linfuncG(line):
@@ -268,7 +269,7 @@ recargsL = ('L', linfuncL, ["Lg"])
 recargsU = ('U', linfuncU, ["Dust"]) 
 recargsQ = ('Q', linfuncQ, ["u", "lng", "lat", "alt", "devno"]) 
 recargsX = ('X', linfuncX, ["Dmb", "tX"]) 
-recargsN = ('N', linfuncN, ["sN"])   # nickel wire
+recargsN = ('N', linfuncN, ["sN", "rN"])   # sprogpressure device (formerly nickel wire)
 recargsAF = ('aF', linfuncAF, ["Pr"])
 recargsAZ = ('aZ', linfuncAZ, ["q1", "q2", "q3"])
 recargsAQ = ('aQ', linfuncAQ, ["u", "lng", "lat", "alt"])
